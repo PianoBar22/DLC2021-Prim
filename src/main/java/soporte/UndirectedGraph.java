@@ -1,5 +1,6 @@
 package soporte;
 
+import java.util.HashSet;
 import java.util.LinkedList;
 
 public class UndirectedGraph<T> extends Graph<T> 
@@ -81,20 +82,20 @@ public class UndirectedGraph<T> extends Graph<T>
         long suma = 0;
         
         // un subconjunto de vertices, con un solo vertice cualquiera... 
-        LinkedList<Node<T>> x = new LinkedList<>();
-        Node<T> s = vertices.getFirst();
-        x.add(s);
+        LinkedList<Node<T>> procesados = new LinkedList<>();
+        Node<T> nodo = vertices.getFirst();
+        procesados.add(nodo);
         
         // un heap ascendente, con todos los arcos incidentes a ese primer unico nodo...
-        Heap<Arc<T>> h = new Heap<>();
-        LinkedList<Arc<T>> se = s.getArcs();
-        for(Arc<T> e : se) { h.add(e); }
+        Heap<Arc<T>> heapArcos = new Heap<>();
+        LinkedList<Arc<T>> se = nodo.getArcs();
+        for(Arc<T> e : se) { heapArcos.add(e); }
         
         // la lista de arcos que formaran el AEM, inicialmente vacía...
-        LinkedList<Arc<T>> t = new LinkedList<>();
+        LinkedList<Arc<T>> arcosAEM = new LinkedList<>();
         
         // seguir hasta que x contenga todos los vértices del grafo original...
-        while(x.size() != vertices.size())
+        while(procesados.size() != vertices.size())
         {      
             // tomar del heap el arco con menor costo...
             // ... pero controlar que x no contenga a ambos vértices... (el grafo puede tener arcos paralelos...)
@@ -102,23 +103,25 @@ public class UndirectedGraph<T> extends Graph<T>
             boolean ok;
             do
             {
-                mce = (Arc<T>) h.remove();
+                mce = (Arc<T>) heapArcos.remove();
                 Node n1 = mce.getInit();
                 Node n2 = mce.getEnd();
-                ok = (x.contains(n1) && !x.contains(n2)) || (x.contains(n2) && !x.contains(n1));
+                
+                ok = (procesados.contains(n1) && !procesados.contains(n2)) || 
+                        (procesados.contains(n2) && !procesados.contains(n1));
             }
-            while( ! h.isEmpty() && ! ok );
+            while( ! heapArcos.isEmpty() && ! ok );
  
             // si el heap se vació sin darme un arco bueno, corto el proceso y retorno la suma como estaba...
             if( ! ok ) { break; }
             
             // añadir el arco al AEM...
-            t.add(mce);
+            arcosAEM.add(mce);
             
             // añadir el otro nodo incidente de ese arco al conjunto x...
             Node<T> y = mce.getInit();
-            if(x.contains(y)) { y = mce.getEnd(); }
-            x.add(y);
+            if(procesados.contains(y)) { y = mce.getEnd(); }
+            procesados.add(y);
             
             // actualizar el heap, agregando los arcos que conecten al nodo "y" con {vertices - x}...
             LinkedList<Arc<T>> ye = y.getArcs();
@@ -129,7 +132,71 @@ public class UndirectedGraph<T> extends Graph<T>
                 if(ny.equals(y)) { ny = e.getEnd(); }
                 
                 // si ese extremo "ny" no está en x, entonces "e" es un arco de cruce y debe agregarse al heap "h"...
-                if(! x.contains(ny)) { h.add(e); }
+                if(! procesados.contains(ny)) { heapArcos.add(e); }
+            }
+            
+            // finalmente, actualizar el valor de la suma de pesos y regresar al ciclo...
+            suma += mce.getWeight();
+        }
+        
+        // ... por fin, devolver la suma de pesos del AEM
+        return suma;
+    }
+    
+    public long getMSTValue_Prim_NEW(){
+        long suma = 0;
+        // un subconjunto de vertices, con un solo vertice cualquiera... 
+        HashSet<Node<T>> procesados = new HashSet<>();
+        Node<T> nodo = vertices.getFirst();
+        procesados.add(nodo);
+        
+        // un heap ascendente, con todos los arcos incidentes a ese primer unico nodo...
+        Heap<Arc<T>> heapArcos = new Heap<>();
+        LinkedList<Arc<T>> se = nodo.getArcs();
+        for(Arc<T> e : se) { heapArcos.add(e); }
+        
+        // la lista de arcos que formaran el AEM, inicialmente vacía...
+        LinkedList<Arc<T>> arcosAEM = new LinkedList<>();
+        
+        // seguir hasta que x contenga todos los vértices del grafo original...
+        while(procesados.size() != vertices.size())
+        {      
+            // tomar del heap el arco con menor costo...
+            // ... pero controlar que x no contenga a ambos vértices... (el grafo puede tener arcos paralelos...)
+            Arc mce;
+            boolean ok;
+            do
+            {
+                mce = (Arc<T>) heapArcos.remove();
+                Node n1 = mce.getInit();
+                Node n2 = mce.getEnd();
+                
+                ok = (procesados.contains(n1) && !procesados.contains(n2)) || 
+                        (procesados.contains(n2) && !procesados.contains(n1));
+            }
+            while( ! heapArcos.isEmpty() && ! ok );
+ 
+            // si el heap se vació sin darme un arco bueno, corto el proceso y retorno la suma como estaba...
+            if( ! ok ) { break; }
+            
+            // añadir el arco al AEM...
+            arcosAEM.add(mce);
+            
+            // añadir el otro nodo incidente de ese arco al conjunto x...
+            Node<T> y = mce.getInit();
+            if(procesados.contains(y)) { y = mce.getEnd(); }
+            procesados.add(y);
+            
+            // actualizar el heap, agregando los arcos que conecten al nodo "y" con {vertices - x}...
+            LinkedList<Arc<T>> ye = y.getArcs();
+            for(Arc<T> e : ye)
+            {
+                // para el arco "e", tomar el extremo que no es "y" ("y" ya está en x)... 
+                Node<T> ny = e.getInit();
+                if(ny.equals(y)) { ny = e.getEnd(); }
+                
+                // si ese extremo "ny" no está en x, entonces "e" es un arco de cruce y debe agregarse al heap "h"...
+                if(! procesados.contains(ny)) { heapArcos.add(e); }
             }
             
             // finalmente, actualizar el valor de la suma de pesos y regresar al ciclo...
