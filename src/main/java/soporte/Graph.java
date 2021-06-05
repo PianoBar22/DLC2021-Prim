@@ -1,5 +1,6 @@
 package soporte;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 
 /**
@@ -15,10 +16,10 @@ import java.util.LinkedList;
 public abstract class Graph <T> implements Cloneable
 {   
     // la lista de vértices...
-    protected LinkedList < Node <T> > vertices;
+    protected ArrayList < Node <T> > vertices;
     
     // la lista de arcos...
-    protected LinkedList < Arc <T> > edges;
+    protected ArrayList < Arc <T> > edges;
     
     // un flag para recordar si el grafo acepta o no arcos paralelos...
     protected boolean allow_parallel_arcs;
