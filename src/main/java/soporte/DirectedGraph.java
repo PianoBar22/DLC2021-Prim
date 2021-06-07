@@ -1,7 +1,7 @@
 
 package soporte;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 
 
 public class DirectedGraph<T> extends Graph<T> 
@@ -35,7 +35,7 @@ public class DirectedGraph<T> extends Graph<T>
      * @param v la lista de vértices a almacenar en el grafo.
      * @param a la lista de arco a almacenar en el grafo.
      */
-    public DirectedGraph(LinkedList< Node<T> > v, LinkedList< Arc<T> > a) 
+    public DirectedGraph(ArrayList< Node<T> > v, ArrayList< Arc<T> > a) 
     {
         super(v, a);
     }
@@ -50,7 +50,7 @@ public class DirectedGraph<T> extends Graph<T>
      * @param a la lista de arco a almacenar en el grafo.
      * @param p true: el grafo acepta arcos paralelos.
      */
-    public DirectedGraph(LinkedList< Node<T> > v, LinkedList< Arc<T> > a, boolean p) 
+    public DirectedGraph(ArrayList< Node<T> > v, ArrayList< Arc<T> > a, boolean p) 
     {
         super(v, a, p);
     }
@@ -78,7 +78,7 @@ public class DirectedGraph<T> extends Graph<T>
         {
             Node n = vertices.get(i);
             res.append("\n\t").append(n.getValue()).append(":\t[ ");
-            LinkedList < Arc <T> > a = n.getArcs();
+            ArrayList < Arc <T> > a = n.getArcs();
             for(int j = 0; j < a.size(); j++)
             {
                 Arc <T> e = a.get(j);

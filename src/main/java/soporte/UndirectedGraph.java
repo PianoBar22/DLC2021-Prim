@@ -1,7 +1,8 @@
 package soporte;
 
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.HashMap;
 
 public class UndirectedGraph<T> extends Graph<T> 
 {
@@ -34,7 +35,7 @@ public class UndirectedGraph<T> extends Graph<T>
      * @param v la lista de vértices a almacenar en el grafo.
      * @param a la lista de arco a almacenar en el grafo.
      */
-    public UndirectedGraph(LinkedList< Node<T> > v, LinkedList< Arc<T> > a) 
+    public UndirectedGraph(ArrayList< Node<T> > v, ArrayList< Arc<T> > a) 
     {
         super(v, a);
     }
@@ -49,7 +50,7 @@ public class UndirectedGraph<T> extends Graph<T>
      * @param a la lista de arco a almacenar en el grafo.
      * @param p true: el grafo acepta arcos paralelos.
      */
-    public UndirectedGraph(LinkedList< Node<T> > v, LinkedList< Arc<T> > a, boolean p) 
+    public UndirectedGraph(ArrayList< Node<T> > v, ArrayList< Arc<T> > a, boolean p) 
     {
         super(v, a, p);
     }
@@ -83,13 +84,15 @@ public class UndirectedGraph<T> extends Graph<T>
         
         // un subconjunto de vertices, con un solo vertice cualquiera... 
         LinkedList<Node<T>> procesados = new LinkedList<>();
-        Node<T> nodo = vertices.getFirst();
+        Node<T> nodo = vertices.get(0);
         procesados.add(nodo);
         
         // un heap ascendente, con todos los arcos incidentes a ese primer unico nodo...
         Heap<Arc<T>> heapArcos = new Heap<>();
-        LinkedList<Arc<T>> se = nodo.getArcs();
-        for(Arc<T> e : se) { heapArcos.add(e); }
+        ArrayList<Arc<T>> se = nodo.getArcs();
+        se.forEach(e -> {
+            heapArcos.add(e);
+        });
         
         // la lista de arcos que formaran el AEM, inicialmente vacía...
         LinkedList<Arc<T>> arcosAEM = new LinkedList<>();
@@ -124,7 +127,7 @@ public class UndirectedGraph<T> extends Graph<T>
             procesados.add(y);
             
             // actualizar el heap, agregando los arcos que conecten al nodo "y" con {vertices - x}...
-            LinkedList<Arc<T>> ye = y.getArcs();
+            ArrayList<Arc<T>> ye = y.getArcs();
             for(Arc<T> e : ye)
             {
                 // para el arco "e", tomar el extremo que no es "y" ("y" ya está en x)... 
@@ -146,64 +149,209 @@ public class UndirectedGraph<T> extends Graph<T>
     public long getMSTValue_Prim_NEW(){
         long suma = 0;
         // un subconjunto de vertices, con un solo vertice cualquiera... 
-        HashSet<Node<T>> procesados = new HashSet<>();
-        Node<T> nodo = vertices.getFirst();
-        procesados.add(nodo);
-        
-        // un heap ascendente, con todos los arcos incidentes a ese primer unico nodo...
-        Heap<Arc<T>> heapArcos = new Heap<>();
-        LinkedList<Arc<T>> se = nodo.getArcs();
-        for(Arc<T> e : se) { heapArcos.add(e); }
+        // En cuanto a tiempos de busqueda la estructura mas optima es
+        // el HashMap, luego tambien podria ser un HashSet ya que ambos
+        // tienen O(1) en la busqueda pero comparandolos el HashMap es 
+        // mas rapido
+        HashMap<Node<T>, Boolean> procesados = new HashMap<>();
         
         // la lista de arcos que formaran el AEM, inicialmente vacía...
-        LinkedList<Arc<T>> arcosAEM = new LinkedList<>();
-        
-        // seguir hasta que x contenga todos los vértices del grafo original...
-        while(procesados.size() != vertices.size())
-        {      
-            // tomar del heap el arco con menor costo...
-            // ... pero controlar que x no contenga a ambos vértices... (el grafo puede tener arcos paralelos...)
-            Arc mce;
-            boolean ok;
-            do
-            {
-                mce = (Arc<T>) heapArcos.remove();
-                Node n1 = mce.getInit();
-                Node n2 = mce.getEnd();
-                
-                ok = (procesados.contains(n1) && !procesados.contains(n2)) || 
-                        (procesados.contains(n2) && !procesados.contains(n1));
+        ArrayList <Arc<T>> arcosAEM = new ArrayList<>();
+
+        // un heap ascendente, con todos los arcos incidentes a ese primer unico nodo...
+        Heap<Arc<T>> heapArcos = new Heap<>();
+
+        //Recorro todos los nodos para poder acceder a cada uno 
+        //de los nodos en caso de que el grafo sea no conexo
+        //con esto me aseguro que todos los nodos fueran procesados
+        for(Node nodo : vertices){
+            //esto va a devolver true en el caso de que procesados este
+            //vacio y cuando queda algun nodo no conexo
+            if(!procesados.containsKey(nodo)){
+                // agrego el nodo de la lista
+                procesados.put(nodo, true);
+
+                ArrayList<Arc<T>> se = nodo.getArcs();
+                se.forEach(e -> {
+                    heapArcos.add(e);
+                });
+
+                // seguir hasta que x contenga todos los vértices del grafo original...
+                while(procesados.size() != vertices.size())
+                {      
+                    // tomar del heap el arco con menor costo...
+                    // ... pero controlar que x no contenga a ambos vértices... (el grafo puede tener arcos paralelos...)
+                    Arc mce;
+                    boolean ok;
+                    //utilizo estas variables booleanas para tener ya cargado
+                    //si los nodos del arco que se analiza estan procesados
+                    // y utilizarlos en el momento que haga falta sin tener que 
+                    // volver a busacarlos
+                    boolean containInit;
+                    boolean containEnd;
+                    
+                    do
+                    {
+                        mce = (Arc<T>) heapArcos.remove();
+                        Node n1 = mce.getInit();
+                        Node n2 = mce.getEnd();
+                        
+                        containInit = procesados.containsKey(n1);
+                        containEnd = procesados.containsKey(n2);
+                        
+                        ok = (containInit && !containEnd) || 
+                                (containEnd && !containInit);
+                    }
+                    while( ! heapArcos.isEmpty() && ! ok );
+
+                    // si el heap se vació sin darme un arco bueno, corto el proceso y retorno la suma como estaba...
+                    // y va a continuar recorriendo los nodos por si hay alguna otra componente conexa que no se haya
+                    // recorrido
+                    if( ! ok ) { break; }
+
+                    // añadir el arco al AEM...
+                    arcosAEM.add(mce);
+
+                    // añadir el otro nodo incidente de ese arco al conjunto x...
+                    Node<T> y = mce.getInit();
+                    
+                    if(containInit) { y = mce.getEnd(); }
+                    procesados.put(y, true);
+
+                    // actualizar el heap, agregando los arcos que conecten al nodo "y" con {vertices - x}...
+                    ArrayList<Arc<T>> ye = y.getArcs();
+                    for(Arc<T> e : ye)
+                    {
+                        // para el arco "e", tomar el extremo que no es "y" ("y" ya está en x)... 
+                        Node<T> ny = e.getInit();
+                        if(ny.equals(y)) { ny = e.getEnd(); }
+
+                        // si ese extremo "ny" no está en x, entonces "e" es un arco de cruce y debe agregarse al heap "h"...
+                        // el hecho de controlar que no esta en x y no insertarlo directamente es que el contains es de orden
+                        // constante y el add del heap tiene orden logaritmico, entonces es mas barato controlar que insertarlo
+                        // y de esta manera mejoramos la performance
+                        if(! procesados.containsKey(ny)) { heapArcos.add(e); }
+                    }
+
+                    // finalmente, actualizar el valor de la suma de pesos y regresar al ciclo...
+                    suma += mce.getWeight();
+                }
             }
-            while( ! heapArcos.isEmpty() && ! ok );
- 
-            // si el heap se vació sin darme un arco bueno, corto el proceso y retorno la suma como estaba...
-            if( ! ok ) { break; }
-            
-            // añadir el arco al AEM...
-            arcosAEM.add(mce);
-            
-            // añadir el otro nodo incidente de ese arco al conjunto x...
-            Node<T> y = mce.getInit();
-            if(procesados.contains(y)) { y = mce.getEnd(); }
-            procesados.add(y);
-            
-            // actualizar el heap, agregando los arcos que conecten al nodo "y" con {vertices - x}...
-            LinkedList<Arc<T>> ye = y.getArcs();
-            for(Arc<T> e : ye)
-            {
-                // para el arco "e", tomar el extremo que no es "y" ("y" ya está en x)... 
-                Node<T> ny = e.getInit();
-                if(ny.equals(y)) { ny = e.getEnd(); }
-                
-                // si ese extremo "ny" no está en x, entonces "e" es un arco de cruce y debe agregarse al heap "h"...
-                if(! procesados.contains(ny)) { heapArcos.add(e); }
-            }
-            
-            // finalmente, actualizar el valor de la suma de pesos y regresar al ciclo...
-            suma += mce.getWeight();
         }
         
-        // ... por fin, devolver la suma de pesos del AEM
+        
+        // ... por fin, devolver la suma de pesos del AEM para todas las componentes conexas
+        // del grafo
+        return suma;
+    }
+    
+    public long getMSTValue_Prim_NEW_V2(){
+        // Utiliza la estructura Union-Find para encontrar las componentes conexas
+        // y las cantidades de nodos de cada componente
+        // se ejecuta el algoritmo de prim tantas veces como grupos haya empezando
+        // por cada lider del grupo
+        
+        //pareciera ser una buena opcion ya que usa union-find pero comparando tiempos
+        //de ejecucion es mas lento que la version V1
+        long suma = 0;
+        Heap<Arc<T>> heapArcosOrd = this.getArcsOrder();
+        
+        UnionFind<T> uf = new UnionFind<>(this.vertices);
+        
+        while(!heapArcosOrd.isEmpty()){
+            Arc arc = heapArcosOrd.remove();
+            uf.union(arc.getInit(), arc.getEnd());
+        }
+        
+        for(int i = 0 ; i < this.vertices.size() ; i++){
+            //obtengo el valor del item en la posicion del nodo
+            //para saber si es lider o no
+            int item = uf.getItem(i);
+            
+            if(item < 0){ //si es lider tiene la cantidad de items del grupo en negativo
+                // un subconjunto de vertices, con un solo vertice cualquiera... 
+                // En cuanto a tiempos de busqueda la estructura mas optima es
+                // el HashMap, luego tambien podria ser un HashSet ya que ambos
+                // tienen O(1) en la busqueda pero comparandolos el HashMap es 
+                // mas rapido
+                HashMap<Node<T>, Boolean> procesados = new HashMap<>();
+
+                // la lista de arcos que formaran el AEM, inicialmente vacía...
+                ArrayList <Arc<T>> arcosAEM = new ArrayList<>();
+
+                // un heap ascendente, con todos los arcos incidentes a ese primer unico nodo...
+                Heap<Arc<T>> heapArcos = new Heap<>();
+                
+                Node nodo = this.vertices.get(i);
+                // agrego el nodo de la lista
+                procesados.put(nodo, true);
+
+                ArrayList<Arc<T>> se = nodo.getArcs();
+                se.forEach(e -> {
+                    heapArcos.add(e);
+                });
+
+                // seguir hasta que procesados contenga todos los vértices de la componente conexa...
+                while(procesados.size() != Math.abs(item))
+                {      
+                    // tomar del heap el arco con menor costo...
+                    // ... pero controlar que x no contenga a ambos vértices... (el grafo puede tener arcos paralelos...)
+                    Arc mce;
+                    boolean ok;
+                    //utilizo estas variables booleanas para tener ya cargado
+                    //si los nodos del arco que se analiza estan procesados
+                    // y utilizarlos en el momento que haga falta sin tener que 
+                    // volver a busacarlos
+                    boolean containInit;
+                    boolean containEnd;
+                    
+                    do
+                    {
+                        mce = (Arc<T>) heapArcos.remove();
+                        Node n1 = mce.getInit();
+                        Node n2 = mce.getEnd();
+                        
+                        containInit = procesados.containsKey(n1);
+                        containEnd = procesados.containsKey(n2);
+                        
+                        ok = (containInit && !containEnd) || 
+                                (containEnd && !containInit);
+                    }
+                    while( ! heapArcos.isEmpty() && ! ok );
+
+                    // si el heap se vació sin darme un arco bueno, corto el proceso y retorno la suma como estaba...
+                    if( ! ok ) { break; }
+
+                    // añadir el arco al AEM...
+                    arcosAEM.add(mce);
+
+                    // añadir el otro nodo incidente de ese arco al conjunto x...
+                    Node<T> y = mce.getInit();
+                    
+                    if(containInit) { y = mce.getEnd(); }
+                    procesados.put(y, true);
+
+                    // actualizar el heap, agregando los arcos que conecten al nodo "y" con {vertices - x}...
+                    ArrayList<Arc<T>> ye = y.getArcs();
+                    for(Arc<T> e : ye)
+                    {
+                        // para el arco "e", tomar el extremo que no es "y" ("y" ya está en x)... 
+                        Node<T> ny = e.getInit();
+                        if(ny.equals(y)) { ny = e.getEnd(); }
+
+                        // si ese extremo "ny" no está en x, entonces "e" es un arco de cruce y debe agregarse al heap "h"...
+                        // el hecho de controlar que no esta en x y no insertarlo directamente es que el contains es de orden
+                        // constante y el add del heap tiene orden logaritmico, entonces es mas barato controlar que insertarlo
+                        // y de esta manera mejoramos la performance
+                        if(! procesados.containsKey(ny)) { heapArcos.add(e); }
+                    }
+
+                    // finalmente, actualizar el valor de la suma de pesos y regresar al ciclo...
+                    suma += mce.getWeight();
+                }
+            }
+        }
+        
         return suma;
     }
 }

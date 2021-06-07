@@ -1,21 +1,22 @@
 package soporte;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 
 /**
  * Usada para representar los vértices o nodos de un grafo implementado con 
- * listas de adyancencia. Cada vértice contiene un objeto de la clase T, y 
- * mantiene una lista con todos los arcos o aristas incidentes a ese nodo (es 
- * decir, todos los arcos que comienzan o terminan en el nodo).
+ * listas de adyancencia.Cada vértice contiene un objeto de la clase T, y 
+ mantiene una lista con todos los arcos o aristas incidentes a ese nodo (es 
+ decir, todos los arcos que comienzan o terminan en el nodo).
  * 
  * @author Ing. Valerio Frittelli.
  * @version Marzo de 2014.
+ * @param <T>
  */
 
 public class Node <T>
 {
     private T value;
-    private LinkedList < Arc <T> > arcs;
+    private ArrayList < Arc <T> > arcs;
     
     /**
      * Crea un Node conteniendo al objeto x, con lista de arcos vacía.
@@ -36,12 +37,12 @@ public class Node <T>
      * @param a la lista de arcos a asignar al vértice.
      * @throws NullPointerException si x es null.
      */
-    public Node(T x, LinkedList <Arc <T> > a)
+    public Node(T x, ArrayList <Arc <T> > a)
     {
         if(x == null) { throw new NullPointerException("Error: referencia nula para crear el vértice"); }
         
         value = x;
-        if(a == null) { a = new LinkedList <> (); }
+        if(a == null) { a = new ArrayList <> (); }
         arcs = a;
     }
     
@@ -58,7 +59,7 @@ public class Node <T>
      * Retorna la lista de arcos incidentes al vértice representado.
      * @return la lista de arcos incidentes al vértice.
      */
-    public LinkedList < Arc <T> > getArcs()
+    public ArrayList < Arc <T> > getArcs()
     {
         return arcs;
     }
@@ -80,7 +81,7 @@ public class Node <T>
      * cambio no se efectúa y queda la lista anterior.
      * @param a la nueva lista de arcos para el vértice.
      */
-    public void setArcs(LinkedList < Arc <T> > a)
+    public void setArcs(ArrayList < Arc <T> > a)
     {
         if(a != null) { arcs = a; }
     }

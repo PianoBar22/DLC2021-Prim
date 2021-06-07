@@ -1,7 +1,6 @@
 package soporte;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 
 /**
  * Usada para representar un grafo implementado con listas de adyacencia. Un
@@ -53,7 +52,7 @@ public abstract class Graph <T> implements Cloneable
      * @param v la lista de vértices a almacenar en el grafo.
      * @param a la lista de arco a almacenar en el grafo.
      */
-    public Graph(LinkedList< Node <T> > v, LinkedList< Arc <T> > a)
+    public Graph(ArrayList< Node <T> > v, ArrayList< Arc <T> > a)
     {
         this(v, a, false);
     }
@@ -68,12 +67,12 @@ public abstract class Graph <T> implements Cloneable
      * @param a la lista de arco a almacenar en el grafo.
      * @param p true: el grafo acepta arcos paralelos.
      */
-    public Graph(LinkedList< Node <T> > v, LinkedList< Arc <T> > a, boolean p)
+    public Graph(ArrayList< Node <T> > v, ArrayList< Arc <T> > a, boolean p)
     {
-        if(v == null) { v = new LinkedList<> (); }
+        if(v == null) { v = new ArrayList<> (); }
         this.vertices = v;
         
-        if(a == null) { a = new LinkedList<> (); }
+        if(a == null) { a = new ArrayList<> (); }
         this.edges = a;
         
         this.allow_parallel_arcs = p;
@@ -146,10 +145,10 @@ public abstract class Graph <T> implements Cloneable
         
         // acceder a las listas de arcos de los vértices inicial y final...
         Node <T> ni = vertices.get(idxin);
-        LinkedList < Arc <T> > lni = ni.getArcs();
+        ArrayList < Arc <T> > lni = ni.getArcs();
 
         Node <T> ne = vertices.get(idxen);
-        LinkedList < Arc <T> > lne = ne.getArcs();
+        ArrayList < Arc <T> > lne = ne.getArcs();
 
         // si se aceptan arcos paralelos agregar el arco en todas las listas 
         // y salir con true... lo mismo si no se aceptan arcos paralelos y la
@@ -355,20 +354,18 @@ public abstract class Graph <T> implements Cloneable
     {
         Graph copy = (Graph) super.clone();
         
-        copy.vertices = new LinkedList <> ();
-        for(Node v : this.vertices)
-        {
+        copy.vertices = new ArrayList <> ();
+        this.vertices.forEach(v -> {
             copy.vertices.add(new Node(v.getValue()));
-        }
+        });
         
-        copy.edges = new LinkedList<> ();
-        for(Arc a : this.edges)
-        {
+        copy.edges = new ArrayList<> ();
+        this.edges.forEach(a -> {
             Node <T> in = new Node(a.getInit().getValue());
             Node <T> en = new Node(a.getEnd().getValue());
             int w = a.getWeight();
-            copy.addArc(in, en, w, false);           
-        }
+            copy.addArc(in, en, w, false);
+        });
         
         return copy;
     }
@@ -415,6 +412,21 @@ public abstract class Graph <T> implements Cloneable
         return edges.get(ri);
     }
     
+    public Heap<Arc<T>> getArcsOrder(){
+        Heap<Arc<T>> arcs = new Heap<>();
+        
+        this.edges.forEach(arc -> {
+            arcs.add(arc);
+        });
+        
+        return arcs;
+    }
+
+    public ArrayList<Arc<T>> getArcs(){
+        Heap<Arc<T>> arcs = new Heap<>();
+        
+        return this.edges;
+    }
     /**
      * Retorna el índice del vértice que contiene al objeto x entrado como
      * parámetro, o -1 si x no está en la lista de vértices.
@@ -447,7 +459,7 @@ public abstract class Graph <T> implements Cloneable
         {
             Node n = vertices.get(i);
             res.append("\n\t").append(n.getValue()).append(":\t[ ");
-            LinkedList < Arc <T> > a = n.getArcs();
+            ArrayList < Arc <T> > a = n.getArcs();
             for(int j = 0; j < a.size(); j++)
             {
                 Arc <T> e = a.get(j);
