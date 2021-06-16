@@ -149,15 +149,17 @@ public abstract class Graph <T> implements Cloneable
 
         Node <T> ne = vertices.get(idxen);
         ArrayList < Arc <T> > lne = ne.getArcs();
+        //para asegurarme que los nodos del arcos pertenezcan al grafo
+        Arc<T> newArc = this.createArc(in, en, a.getWeight());
 
         // si se aceptan arcos paralelos agregar el arco en todas las listas 
         // y salir con true... lo mismo si no se aceptan arcos paralelos y la
         // lista general de arcos no contiene a ese arco...
-        if(this.allow_parallel_arcs || ! this.edges.contains(a))
+        if(this.allow_parallel_arcs || ! this.edges.contains(newArc))
         {
-            lni.add(a);
-            lne.add(a);
-            this.edges.add(a);
+            lni.add(newArc);
+            lne.add(newArc);
+            this.edges.add(newArc);
             return true;
         }
                 

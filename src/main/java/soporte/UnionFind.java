@@ -126,6 +126,12 @@ public class UnionFind<T>
         
         return this.union(idx1, idx2);
     }
+    
+    public int find(Node<T> n1){
+        int idx1 = this.vertices.get(n1);
+        return this.find(idx1);
+    }
+    
     /**
      * Une los grupos de los objetos cuyos índices son idx1 e idx2, formando un 
      * único nuevo grupo. El método retorna true si la union es válida y pudo 

@@ -146,7 +146,7 @@ public class UndirectedGraph<T> extends Graph<T>
         return suma;
     }
     
-    public long getMSTValue_Prim_NEW(){
+    public UndirectedGraph<T> getMSTValue_Prim_NEW(){
         long suma = 0;
         // un subconjunto de vertices, con un solo vertice cualquiera... 
         // En cuanto a tiempos de busqueda la estructura mas optima es
@@ -155,8 +155,11 @@ public class UndirectedGraph<T> extends Graph<T>
         // mas rapido
         HashMap<Node<T>, Boolean> procesados = new HashMap<>();
         
-        // la lista de arcos que formaran el AEM, inicialmente vacía...
-        ArrayList <Arc<T>> arcosAEM = new ArrayList<>();
+        // Es el grafo que formaran el AEM, inicialmente con los nodos
+        // sin arcos asignados...
+        UndirectedGraph<T> grafoAEM = new UndirectedGraph<>();
+        //creo un nuevo nodo para que no arrastre los arcos de cada nodo
+        this.vertices.forEach(nodo -> grafoAEM.add(new Node(nodo.getValue())));
 
         // un heap ascendente, con todos los arcos incidentes a ese primer unico nodo...
         Heap<Arc<T>> heapArcos = new Heap<>();
@@ -177,7 +180,9 @@ public class UndirectedGraph<T> extends Graph<T>
                 });
 
                 // seguir hasta que x contenga todos los vértices del grafo original...
-                while(procesados.size() != vertices.size())
+                //!heapArcos.isEmpty() es por el caso en que sea un grafo de un solo nodo
+                //por lo cual no tiene arcos
+                while(procesados.size() != vertices.size() && !heapArcos.isEmpty())
                 {      
                     // tomar del heap el arco con menor costo...
                     // ... pero controlar que x no contenga a ambos vértices... (el grafo puede tener arcos paralelos...)
@@ -210,7 +215,9 @@ public class UndirectedGraph<T> extends Graph<T>
                     if( ! ok ) { break; }
 
                     // añadir el arco al AEM...
-                    arcosAEM.add(mce);
+                    //el add de los arcos crea un arco nuevo
+                    //con los nodos que pertenecen al grafoAEM
+                    grafoAEM.add(mce);
 
                     // añadir el otro nodo incidente de ese arco al conjunto x...
                     Node<T> y = mce.getInit();
@@ -242,7 +249,7 @@ public class UndirectedGraph<T> extends Graph<T>
         
         // ... por fin, devolver la suma de pesos del AEM para todas las componentes conexas
         // del grafo
-        return suma;
+        return grafoAEM;
     }
     
     public long getMSTValue_Prim_NEW_V2(){
@@ -253,9 +260,12 @@ public class UndirectedGraph<T> extends Graph<T>
         
         //pareciera ser una buena opcion ya que usa union-find pero comparando tiempos
         //de ejecucion es mas lento que la version V1
+        //Habria que hacer una pruba con una gran cantidad de nodos, arcos y componentes conexas
         long suma = 0;
+        //O(log(n))
         Heap<Arc<T>> heapArcosOrd = this.getArcsOrder();
         
+        //O(n) -- recorre todos los nodos para inicializar el union-find
         UnionFind<T> uf = new UnionFind<>(this.vertices);
         
         while(!heapArcosOrd.isEmpty()){
@@ -263,6 +273,9 @@ public class UndirectedGraph<T> extends Graph<T>
             uf.union(arc.getInit(), arc.getEnd());
         }
         
+        //seria la misma logica que el algoritmo de prim de la V1
+        //con la diferencia de que se corta cuando se procesaron la cantidad de
+        //nodos es la que nos devuelve el UnionFind(objeto uf)
         for(int i = 0 ; i < this.vertices.size() ; i++){
             //obtengo el valor del item en la posicion del nodo
             //para saber si es lider o no
@@ -353,6 +366,52 @@ public class UndirectedGraph<T> extends Graph<T>
         }
         
         return suma;
+    }
+    
+    public long corte_minimo() throws CloneNotSupportedException{
+        UndirectedGraph<String> G = (UndirectedGraph<String>) this.clone();
+        G.allow_parallel_arcs = true;
+        
+        while(G.countNodes() > 2){
+            Arc<String> arc = G.getRandomArc();
+            Node<String> nodeCompress = new Node<>(arc.getInit().getValue() + "-" + arc.getEnd().getValue());
+            
+            G.reasignarNodo(arc.getInit(), nodeCompress);
+            G.reasignarNodo(arc.getEnd(), nodeCompress);
+            G.add(nodeCompress);
+            G.eliminarAutoCiclos();
+        }
+        
+        return G.countEdges();
+    }
+
+    private void reasignarNodo(Node<T> oldNode, Node<T> newNode) {
+        for(Arc<T> arc : oldNode.getArcs()){
+            if(arc.getInit().equals(oldNode)){
+                arc.setInit(newNode);
+            }
+            else
+            {
+                arc.setEnd(newNode);
+            }
+            newNode.getArcs().add(arc);
+        }
+        this.vertices.remove(oldNode);
+    }
+
+    private void eliminarAutoCiclos() {
+        ArrayList<Arc<T>> toRemove = new ArrayList<>();
+        for(Arc<T> arc : this.getArcs()){
+            if(arc.getInit().equals(arc.getEnd())){
+                toRemove.add(arc);
+            }
+        }
+        
+        for(Arc<T> arc : toRemove){
+            this.getArcs().remove(arc);
+            arc.getInit().getArcs().remove(arc);
+            arc.getEnd().getArcs().remove(arc);
+        }
     }
 }
 
